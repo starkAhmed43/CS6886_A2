@@ -7,10 +7,10 @@ wandb:
   offline: False
   id: null # pass correct id to resume experiment!
   anonymous: null # enable anonymous logging
-  project: "lightning-hydra-template"
+  project: "cs6886-a2"
   log_model: False # upload lightning ckpts
   prefix: "" # a string to put at the beginning of metric keys
-  entity: "bisect-group" # set to name of your wandb team
+  entity: "starkahmed43" # set to name of your wandb team
   group: ""
   tags: []
   job_type: ""

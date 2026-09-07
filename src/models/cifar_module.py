@@ -6,8 +6,8 @@ from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 
 
-class MNISTLitModule(LightningModule):
-    """Example of a `LightningModule` for MNIST classification.
+class CIFARLitModule(LightningModule):
+    """Example of a `LightningModule` for CIFAR-10 classification.
 
     A `LightningModule` implements 8 key methods:
 
@@ -45,12 +45,16 @@ class MNISTLitModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
+        num_classes: int = 10,
+        label_smoothing: float = 0.0,
     ) -> None:
-        """Initialize a `MNISTLitModule`.
+        """Initialize a `CIFARLitModule`.
 
         :param net: The model to train.
         :param optimizer: The optimizer to use for training.
         :param scheduler: The learning rate scheduler to use for training.
+        :param num_classes: Number of target classes.
+        :param label_smoothing: Label smoothing factor for the cross-entropy loss.
         """
         super().__init__()
 
@@ -61,12 +65,12 @@ class MNISTLitModule(LightningModule):
         self.net = net
 
         # loss function
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.CrossEntropyLoss(label_smoothing=self.hparams.label_smoothing)
 
         # metric objects for calculating and averaging accuracy across batches
-        self.train_acc = Accuracy(task="multiclass", num_classes=10)
-        self.val_acc = Accuracy(task="multiclass", num_classes=10)
-        self.test_acc = Accuracy(task="multiclass", num_classes=10)
+        self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.test_acc = Accuracy(task="multiclass", num_classes=num_classes)
 
         # for averaging loss across batches
         self.train_loss = MeanMetric()
@@ -205,7 +209,6 @@ class MNISTLitModule(LightningModule):
                 "optimizer": optimizer,
                 "lr_scheduler": {
                     "scheduler": scheduler,
-                    "monitor": "val/loss",
                     "interval": "epoch",
                     "frequency": 1,
                 },
@@ -214,4 +217,4 @@ class MNISTLitModule(LightningModule):
 
 
 if __name__ == "__main__":
-    _ = MNISTLitModule(None, None, None, None)
+    _ = CIFARLitModule(None, None, None, None)

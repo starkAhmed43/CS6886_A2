@@ -3,12 +3,12 @@ from pathlib import Path
 import pytest
 import torch
 
-from src.data.mnist_datamodule import MNISTDataModule
+from src.data.cifar10_datamodule import CIFAR10DataModule
 
 
 @pytest.mark.parametrize("batch_size", [32, 128])
-def test_mnist_datamodule(batch_size: int) -> None:
-    """Tests `MNISTDataModule` to verify that it can be downloaded correctly, that the necessary
+def test_cifar10_datamodule(batch_size: int) -> None:
+    """Tests `CIFAR10DataModule` to verify that it can be downloaded correctly, that the necessary
     attributes were created (e.g., the dataloader objects), and that dtypes and batch sizes
     correctly match.
 
@@ -16,19 +16,18 @@ def test_mnist_datamodule(batch_size: int) -> None:
     """
     data_dir = "data/"
 
-    dm = MNISTDataModule(data_dir=data_dir, batch_size=batch_size)
+    dm = CIFAR10DataModule(data_dir=data_dir, batch_size=batch_size, num_workers=0, pin_memory=False)
     dm.prepare_data()
 
     assert not dm.data_train and not dm.data_val and not dm.data_test
-    assert Path(data_dir, "MNIST").exists()
-    assert Path(data_dir, "MNIST", "raw").exists()
+    assert Path(data_dir, "processed", "cifar-10-batches-py").exists()
 
     dm.setup()
     assert dm.data_train and dm.data_val and dm.data_test
     assert dm.train_dataloader() and dm.val_dataloader() and dm.test_dataloader()
 
-    num_datapoints = len(dm.data_train) + len(dm.data_val) + len(dm.data_test)
-    assert num_datapoints == 70_000
+    # default (val_from_train=False): train=50k, val=test=10k
+    assert len(dm.data_train) == 50_000
 
     batch = next(iter(dm.train_dataloader()))
     x, y = batch

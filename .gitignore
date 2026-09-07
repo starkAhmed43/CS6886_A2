@@ -151,3 +151,7 @@ configs/local/default.yaml
 
 # Aim logging
 .aim
+
+# CIFAR-10 data artifacts (downloaded/extracted; not tracked)
+/data/raw/cifar-10-python.tar.gz
+/data/processed/cifar-10-batches-py/

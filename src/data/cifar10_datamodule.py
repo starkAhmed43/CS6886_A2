@@ -1,21 +1,19 @@
-from typing import Any, Dict, Optional, Tuple
+import os
+from typing import Any, Dict, Optional
 
 import torch
 from lightning import LightningDataModule
-from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
-from torchvision.datasets import MNIST
+from torch.utils.data import DataLoader, Dataset, random_split
+from torchvision.datasets import CIFAR10
+from torchvision.datasets.utils import download_and_extract_archive
 from torchvision.transforms import transforms
 
 
-class MNISTDataModule(LightningDataModule):
-    """`LightningDataModule` for the MNIST dataset.
+class CIFAR10DataModule(LightningDataModule):
+    """`LightningDataModule` for the CIFAR-10 dataset.
 
-    The MNIST database of handwritten digits has a training set of 60,000 examples, and a test set of 10,000 examples.
-    It is a subset of a larger set available from NIST. The digits have been size-normalized and centered in a
-    fixed-size image. The original black and white images from NIST were size normalized to fit in a 20x20 pixel box
-    while preserving their aspect ratio. The resulting images contain grey levels as a result of the anti-aliasing
-    technique used by the normalization algorithm. the images were centered in a 28x28 image by computing the center of
-    mass of the pixels, and translating the image so as to position this point at the center of the 28x28 field.
+    CIFAR-10 consists of 60,000 32x32 colour images in 10 classes, with 6,000 images per
+    class. There are 50,000 training images and 10,000 test images.
 
     A `LightningDataModule` implements 7 key methods:
 
@@ -55,18 +53,20 @@ class MNISTDataModule(LightningDataModule):
     def __init__(
         self,
         data_dir: str = "data/",
-        train_val_test_split: Tuple[int, int, int] = (55_000, 5_000, 10_000),
-        batch_size: int = 64,
-        num_workers: int = 0,
-        pin_memory: bool = False,
+        batch_size: int = 128,
+        num_workers: int = 8,
+        pin_memory: bool = True,
+        val_from_train: bool = False,
     ) -> None:
-        """Initialize a `MNISTDataModule`.
+        """Initialize a `CIFAR10DataModule`.
 
-        :param data_dir: The data directory. Defaults to `"data/"`.
-        :param train_val_test_split: The train, validation and test split. Defaults to `(55_000, 5_000, 10_000)`.
-        :param batch_size: The batch size. Defaults to `64`.
-        :param num_workers: The number of workers. Defaults to `0`.
-        :param pin_memory: Whether to pin memory. Defaults to `False`.
+        :param data_dir: The base data directory. Contains the downloaded archive under
+            `raw/` and the extracted dataset under `processed/`. Defaults to `"data/"`.
+        :param batch_size: The batch size. Defaults to `128`.
+        :param num_workers: The number of workers. Defaults to `8`.
+        :param pin_memory: Whether to pin memory. Defaults to `True`.
+        :param val_from_train: Whether to carve validation out of the train set instead of
+            reusing the test set. Defaults to `False`.
         """
         super().__init__()
 
@@ -75,8 +75,19 @@ class MNISTDataModule(LightningDataModule):
         self.save_hyperparameters(logger=False)
 
         # data transformations
-        self.transforms = transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        self.train_transforms = transforms.Compose(
+            [
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            ]
+        )
+        self.test_transforms = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616)),
+            ]
         )
 
         self.data_train: Optional[Dataset] = None
@@ -89,7 +100,7 @@ class MNISTDataModule(LightningDataModule):
     def num_classes(self) -> int:
         """Get the number of classes.
 
-        :return: The number of MNIST classes (10).
+        :return: The number of CIFAR-10 classes (10).
         """
         return 10
 
@@ -101,8 +112,17 @@ class MNISTDataModule(LightningDataModule):
 
         Do not use it to assign state (self.x = y).
         """
-        MNIST(self.hparams.data_dir, train=True, download=True)
-        MNIST(self.hparams.data_dir, train=False, download=True)
+        raw_dir = os.path.join(self.hparams.data_dir, "raw")
+        processed_dir = os.path.join(self.hparams.data_dir, "processed")
+        # tgz -> data/raw/, extracted cifar-10-batches-py -> data/processed/
+        if not os.path.isdir(os.path.join(processed_dir, CIFAR10.base_folder)):
+            download_and_extract_archive(
+                url=CIFAR10.url,
+                download_root=raw_dir,
+                extract_root=processed_dir,
+                filename=CIFAR10.filename,
+                md5=CIFAR10.tgz_md5,
+            )
 
     def setup(self, stage: Optional[str] = None) -> None:
         """Load data. Set variables: `self.data_train`, `self.data_val`, `self.data_test`.
@@ -124,53 +144,59 @@ class MNISTDataModule(LightningDataModule):
 
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
-            trainset = MNIST(self.hparams.data_dir, train=True, transform=self.transforms)
-            testset = MNIST(self.hparams.data_dir, train=False, transform=self.transforms)
-            dataset = ConcatDataset(datasets=[trainset, testset])
-            self.data_train, self.data_val, self.data_test = random_split(
-                dataset=dataset,
-                lengths=self.hparams.train_val_test_split,
-                generator=torch.Generator().manual_seed(42),
+            processed_dir = os.path.join(self.hparams.data_dir, "processed")
+            trainset = CIFAR10(
+                processed_dir, train=True, transform=self.train_transforms, download=False
             )
+            testset = CIFAR10(
+                processed_dir, train=False, transform=self.test_transforms, download=False
+            )
+            if self.hparams.val_from_train:
+                # NOTE: this 5k validation split still carries train-time augmentation.
+                self.data_train, self.data_val = random_split(
+                    dataset=trainset,
+                    lengths=(45_000, 5_000),
+                    generator=torch.Generator().manual_seed(42),
+                )
+                self.data_test = testset
+            else:
+                # Reuse the test set for validation-curve monitoring: reported val/test metrics coincide.
+                self.data_train = trainset
+                self.data_val = testset
+                self.data_test = testset
+
+    def _loader_kwargs(self) -> Dict[str, Any]:
+        kwargs: Dict[str, Any] = {
+            "batch_size": self.batch_size_per_device,
+            "num_workers": self.hparams.num_workers,
+            "pin_memory": self.hparams.pin_memory,
+        }
+        if self.hparams.num_workers > 0:
+            # keep workers alive across epochs (avoids per-epoch respawn stalls) and prefetch more
+            kwargs["persistent_workers"] = True
+            kwargs["prefetch_factor"] = 4
+        return kwargs
 
     def train_dataloader(self) -> DataLoader[Any]:
         """Create and return the train dataloader.
 
         :return: The train dataloader.
         """
-        return DataLoader(
-            dataset=self.data_train,
-            batch_size=self.batch_size_per_device,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            shuffle=True,
-        )
+        return DataLoader(dataset=self.data_train, shuffle=True, **self._loader_kwargs())
 
     def val_dataloader(self) -> DataLoader[Any]:
         """Create and return the validation dataloader.
 
         :return: The validation dataloader.
         """
-        return DataLoader(
-            dataset=self.data_val,
-            batch_size=self.batch_size_per_device,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            shuffle=False,
-        )
+        return DataLoader(dataset=self.data_val, shuffle=False, **self._loader_kwargs())
 
     def test_dataloader(self) -> DataLoader[Any]:
         """Create and return the test dataloader.
 
         :return: The test dataloader.
         """
-        return DataLoader(
-            dataset=self.data_test,
-            batch_size=self.batch_size_per_device,
-            num_workers=self.hparams.num_workers,
-            pin_memory=self.hparams.pin_memory,
-            shuffle=False,
-        )
+        return DataLoader(dataset=self.data_test, shuffle=False, **self._loader_kwargs())
 
     def teardown(self, stage: Optional[str] = None) -> None:
         """Lightning hook for cleaning up after `trainer.fit()`, `trainer.validate()`,
@@ -198,4 +224,4 @@ class MNISTDataModule(LightningDataModule):
 
 
 if __name__ == "__main__":
-    _ = MNISTDataModule()
+    _ = CIFAR10DataModule()

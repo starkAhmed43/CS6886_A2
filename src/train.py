@@ -1,3 +1,8 @@
+# Load full (non-weights-only) checkpoints; PyTorch 2.6+ defaults torch.load to weights_only=True.
+import os
+
+os.environ.setdefault("TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "1")
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import hydra

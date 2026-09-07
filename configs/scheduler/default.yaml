@@ -1,3 +1,4 @@
-_target_: transformers.get_cosine_schedule_with_warmup
+_target_: src.models.components.schedulers.warmup_cosine
 _partial_: true
-num_cycles: 0.5
+warmup_epochs: 5
+max_epochs: 200

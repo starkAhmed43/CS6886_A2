@@ -1,4 +1,6 @@
-_target_: torch.optim.AdamW
+_target_: torch.optim.SGD
 _partial_: true
-lr: 6e-4
-weight_decay: 0.01
+lr: 0.1
+momentum: 0.9
+weight_decay: 5e-4
+nesterov: true
