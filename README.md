@@ -17,15 +17,15 @@ A CUDA GPU is required. The code was developed and verified on an NVIDIA RTX PRO
 
 ### Dependency versions
 
-| Package | Version |
-|---|---|
-| Python | 3.12 |
-| torch | 2.14.0 (cu132) |
-| torchvision | 0.29.0 (cu132) |
-| lightning | 2.6.5 |
-| torchmetrics | 1.9.0 |
-| hydra-core | 1.3.6 |
-| wandb | 0.29.0 |
+| Package      | Version        |
+| ------------ | -------------- |
+| Python       | 3.12           |
+| torch        | 2.14.0 (cu132) |
+| torchvision  | 0.29.0 (cu132) |
+| lightning    | 2.6.5          |
+| torchmetrics | 1.9.0          |
+| hydra-core   | 1.3.6          |
+| wandb        | 0.29.0         |
 
 ### Setup
 
@@ -166,10 +166,10 @@ The CIFAR downsampling adaptation matters. A larger final feature map keeps more
 detail and gives a clear accuracy gain:
 
 | `stride_relax` | final map | test top-1 |
-|---|---|---|
-| 1 | 2x2 | 90.65% |
-| 2 | 4x4 | 92.47% |
-| 3 | 8x8 | **93.98%** |
+| -------------- | --------- | ---------- |
+| 1              | 2x2       | 90.65%     |
+| 2              | 4x4       | 92.47%     |
+| 3              | 8x8       | **93.98%** |
 
 Training/validation loss and accuracy curves: see `reports/q1_curves.png` (and the wandb
 run `mnv2-relax3-8x8-94.0`). Per-class accuracy and confusion matrix:

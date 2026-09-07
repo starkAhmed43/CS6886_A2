@@ -16,7 +16,9 @@ def test_cifar10_datamodule(batch_size: int) -> None:
     """
     data_dir = "data/"
 
-    dm = CIFAR10DataModule(data_dir=data_dir, batch_size=batch_size, num_workers=0, pin_memory=False)
+    dm = CIFAR10DataModule(
+        data_dir=data_dir, batch_size=batch_size, num_workers=0, pin_memory=False
+    )
     dm.prepare_data()
 
     assert not dm.data_train and not dm.data_val and not dm.data_test

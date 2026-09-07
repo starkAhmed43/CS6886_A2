@@ -41,9 +41,7 @@ def mobilenetv2_cifar(
         if isinstance(m, nn.Conv2d) and tuple(m.stride) == (2, 2)
     ]
     if not 0 <= stride_relax <= len(downsamplers):
-        raise ValueError(
-            f"stride_relax must be in [0, {len(downsamplers)}], got {stride_relax}"
-        )
+        raise ValueError(f"stride_relax must be in [0, {len(downsamplers)}], got {stride_relax}")
     for conv in downsamplers[:stride_relax]:
         conv.stride = (1, 1)
     return net
