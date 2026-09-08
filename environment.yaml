@@ -27,9 +27,11 @@ dependencies:
 
   - pip
   - pip:
-      # torch/torchvision installed separately: pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu132
-      - torch==2.14.0
-      - torchvision==0.29.0
+      # torch/torchvision are the CUDA 13.2 (Blackwell) wheels from the PyTorch index below.
+      # For a different GPU/CUDA, change this index URL and the torch/torchvision versions.
+      - --extra-index-url https://download.pytorch.org/whl/cu132
+      - torch==2.14.0+cu132
+      - torchvision==0.29.0+cu132
       - lightning
       - torchmetrics
       - hydra-core>=1.3
