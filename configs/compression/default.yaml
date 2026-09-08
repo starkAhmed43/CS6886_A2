@@ -1,0 +1,7 @@
+weight_bits: 8
+activation_bits: 8
+per_channel_weights: true
+calib_method: mse
+num_calib_batches: 4
+keep_first: true
+keep_last: true

@@ -1,0 +1,17 @@
+# @package _global_
+defaults:
+  - _self_
+  - data: cifar10
+  - model: mobilenetv2
+  - optimizer: default
+  - scheduler: default
+  - compression: default
+  - logger: wandb
+  - trainer: gpu
+  - paths: default
+  - extras: default
+  - hydra: default
+
+task_name: "quantize"
+tags: ["quantize", "ptq"]
+ckpt_path: ${paths.root_dir}/logs/train/runs/2026-09-07_10-08-10/checkpoints/epoch_193.ckpt
