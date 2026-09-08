@@ -27,6 +27,7 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 @torch.no_grad()
 def _evaluate(net, loader, device) -> float:
+    """Compute top-1 accuracy of `net` on `loader`."""
     net.eval()
     correct, total = 0, 0
     for x, y in loader:
@@ -84,7 +85,9 @@ def quantize(cfg: DictConfig) -> None:
 
     log.info("=" * 60)
     log.info(f"Quantized top-1 accuracy: {quantized_acc:.4f}")
-    log.info(f"Model size: {size_report['model_size_mb']:.3f} MB (baseline {size_report['baseline_mb']:.3f} MB)")
+    log.info(
+        f"Model size: {size_report['model_size_mb']:.3f} MB (baseline {size_report['baseline_mb']:.3f} MB)"
+    )
     log.info(f"Weight compression ratio: {size_report['compression_ratio']:.3f}x")
     log.info(f"Weight-only compression ratio: {size_report['weight_compression_ratio']:.3f}x")
     log.info(f"Activation compression ratio: {act_report['activation_compression_ratio']:.3f}x")
@@ -110,6 +113,7 @@ def quantize(cfg: DictConfig) -> None:
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="quantize.yaml")
 def main(cfg: DictConfig) -> None:
+    """Hydra entry point: apply run extras then quantize the configured checkpoint."""
     extras(cfg)
     quantize(cfg)
 

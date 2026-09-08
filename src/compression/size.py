@@ -5,8 +5,6 @@ from typing import Dict, List
 import torch
 import torch.nn as nn
 
-from src.compression.modules import QuantConv2d, QuantLinear
-
 
 def model_size_report(
     net: nn.Module,
@@ -70,7 +68,10 @@ def model_size_report(
 
 
 def activation_compression(
-    net: nn.Module, quant_modules: List[nn.Module], example_input: torch.Tensor, activation_bits: int
+    net: nn.Module,
+    quant_modules: List[nn.Module],
+    example_input: torch.Tensor,
+    activation_bits: int,
 ) -> Dict[str, float]:
     """Estimate the activation storage savings from quantizing each quant module's input."""
     numels = []
@@ -95,7 +96,9 @@ def activation_compression(
     total_numel = sum(numels)
     activation_bits_total = total_numel * activation_bits
     baseline_bits_total = total_numel * 32
-    activation_compression_ratio = baseline_bits_total / activation_bits_total if activation_bits_total else 1.0
+    activation_compression_ratio = (
+        baseline_bits_total / activation_bits_total if activation_bits_total else 1.0
+    )
 
     return {
         "activation_numel_total": total_numel,

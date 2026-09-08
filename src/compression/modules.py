@@ -27,6 +27,7 @@ class ActObserver(nn.Module):
         self.qmax = None
 
     def observe(self, x: torch.Tensor) -> None:
+        """Update the running min/max with the values seen in `x`."""
         self.min_val = torch.minimum(self.min_val, x.detach().amin())
         self.max_val = torch.maximum(self.max_val, x.detach().amax())
 
@@ -45,11 +46,15 @@ class ActObserver(nn.Module):
         self.qmin, self.qmax = get_qmin_qmax(num_bits, symmetric=False)
 
     def quantize(self, x: torch.Tensor) -> torch.Tensor:
+        """Fake-quantize `x` using the frozen activation qparams."""
         return fake_quantize(x, self.scale, self.zero_point, self.qmin, self.qmax)
 
 
 class _QuantModuleMixin:
+    """Shared weight-quantization helpers for `QuantConv2d` and `QuantLinear`."""
+
     def _cache_weight_qparams(self):
+        """Compute and cache symmetric weight qparams from the current weight tensor."""
         self.weight_scale, self.weight_zero_point = compute_qparams(
             self.weight,
             self.weight_bits,
@@ -61,12 +66,18 @@ class _QuantModuleMixin:
         self.weight_qmin, self.weight_qmax = get_qmin_qmax(self.weight_bits, symmetric=True)
 
     def freeze(self) -> None:
+        """Freeze both activation and weight qparams from calibration statistics."""
         self.act_obs.freeze(self.act_bits, method=self.calib_method)
         self._cache_weight_qparams()
 
     def _quantized_weight(self) -> torch.Tensor:
+        """Return the fake-quantized weight tensor."""
         return fake_quantize(
-            self.weight, self.weight_scale, self.weight_zero_point, self.weight_qmin, self.weight_qmax
+            self.weight,
+            self.weight_scale,
+            self.weight_zero_point,
+            self.weight_qmin,
+            self.weight_qmax,
         )
 
 
@@ -102,6 +113,7 @@ class QuantConv2d(nn.Module, _QuantModuleMixin):
         self.weight_qmax = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the conv in calibration mode (observe activations) or quantized mode."""
         if self.mode == "calibrate":
             self.act_obs.observe(x)
             return F.conv2d(
@@ -109,9 +121,7 @@ class QuantConv2d(nn.Module, _QuantModuleMixin):
             )
         xq = self.act_obs.quantize(x)
         wq = self._quantized_weight()
-        return F.conv2d(
-            xq, wq, self.bias, self.stride, self.padding, self.dilation, self.groups
-        )
+        return F.conv2d(xq, wq, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
 
 class QuantLinear(nn.Module, _QuantModuleMixin):
@@ -142,6 +152,7 @@ class QuantLinear(nn.Module, _QuantModuleMixin):
         self.weight_qmax = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the linear op in calibration mode (observe activations) or quantized mode."""
         if self.mode == "calibrate":
             self.act_obs.observe(x)
             return F.linear(x, self.weight, self.bias)

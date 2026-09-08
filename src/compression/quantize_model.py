@@ -45,14 +45,18 @@ def quantize_model(
             if keep_first and name == first_conv:
                 continue
             parent, attr = _get_parent_and_attr(net, name)
-            q = QuantConv2d(module, weight_bits, activation_bits, per_channel_weights, calib_method)
+            q = QuantConv2d(
+                module, weight_bits, activation_bits, per_channel_weights, calib_method
+            )
             setattr(parent, attr, q)
             quant_modules.append(q)
         elif isinstance(module, nn.Linear):
             if keep_last and name == last_linear:
                 continue
             parent, attr = _get_parent_and_attr(net, name)
-            q = QuantLinear(module, weight_bits, activation_bits, per_channel_weights, calib_method)
+            q = QuantLinear(
+                module, weight_bits, activation_bits, per_channel_weights, calib_method
+            )
             setattr(parent, attr, q)
             quant_modules.append(q)
 

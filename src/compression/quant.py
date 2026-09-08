@@ -34,12 +34,14 @@ def fake_quantize(
 
 
 def _reduce_dims(x: torch.Tensor, ch_axis: int):
+    """Return all dims of `x` except `ch_axis`, for per-channel min/max reduction."""
     return [d for d in range(x.dim()) if d != ch_axis]
 
 
 def _minmax_qparams(
     x_min: torch.Tensor, x_max: torch.Tensor, num_bits: int, symmetric: bool
 ) -> Tuple[torch.Tensor, torch.Tensor, int, int]:
+    """Derive (scale, zero_point, qmin, qmax) from an observed [x_min, x_max] range."""
     qmin, qmax = get_qmin_qmax(num_bits, symmetric)
     if symmetric:
         max_abs = torch.maximum(x_max.abs(), x_min.abs()).clamp(min=1e-8)
