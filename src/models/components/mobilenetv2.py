@@ -6,6 +6,11 @@ feature map before the network even sees much of it. The number of these downsam
 strides to relax to stride 1 is configurable via `stride_relax` (default 2, matching the
 stem conv and the first inverted-residual downsample), which keeps more spatial detail
 early on for small CIFAR-sized inputs.
+
+stride_relax=0 => 32x32 -> 16x16 -> 8x8 -> 4x4 -> 2x2 -> 1x1 final feature map
+stride_relax=1 => 32x32 -> 32x32 -> 16x16 -> 8x8 -> 4x4 -> 2x2 final feature map
+stride_relax=2 => 32x32 -> 32x32 -> 32x32 -> 16x16 -> 8x8 -> 4x4 final feature map
+stride_relax=3 => 32x32 -> 32x32 -> 32x32 -> 32x32 -> 16x16 -> 8x8 final feature map
 """
 
 import torch
