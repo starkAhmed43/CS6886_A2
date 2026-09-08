@@ -31,4 +31,4 @@ jobs:
           WANDB_MODE: offline
         run: |
           export PROJECT_ROOT=$(pwd)
-          pytest tests/test_configs.py tests/test_datamodules.py -o addopts="" -q
+          pytest tests/test_configs.py tests/test_datamodules.py tests/test_quant.py -o addopts="" -q
