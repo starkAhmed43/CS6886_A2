@@ -120,6 +120,10 @@ This trains for 200 epochs on the GPU, evaluates on the CIFAR-10 test set, and l
 loss/accuracy curves to Weights & Biases. The best checkpoint (by `val/acc`) is saved
 under `logs/train/runs/<timestamp>/checkpoints/`.
 
+The first run downloads CIFAR-10 automatically (~170 MB): the archive to `data/raw/` and the
+extracted set to `data/processed/`. It needs internet once, then caches locally. The dataset is
+git-ignored, so it is never committed.
+
 ### Seed and reproducibility
 
 The experiment sets `seed: 42`, which seeds Python, NumPy, and PyTorch through Lightning.
